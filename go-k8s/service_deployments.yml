@@ -1,0 +1,78 @@
+# Headless Service for MySQL
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: dev
+spec:
+  clusterIP: None
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+
+---
+# App Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-mysql-crud
+  namespace: dev
+spec:
+  selector:
+    app: go-mysql-crud
+  type: NodePort
+  ports:
+    - port: 8005
+      targetPort: 8005
+      nodePort: 30005
+
+---
+# App Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-mysql-crud
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-mysql-crud
+  template:
+    metadata:
+      labels:
+        app: go-mysql-crud
+    spec:
+      containers:
+        - name: go-mysql-crud
+          image: devopsrumee/go-mysql-crud:latest
+          ports:
+            - containerPort: 8005
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PASS
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_NAME
