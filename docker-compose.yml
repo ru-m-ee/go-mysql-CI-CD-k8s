@@ -1,23 +1,38 @@
-version: '3.1'
-
 services:
   web:
     restart: always
-    image: go-mysql-crud
+    build: .
+    container_name: go-mysql-crud
     ports:
-      - 8005:8005
-    links:
-      - mysql
+      - "8006:8005"
     environment:
-      - "DB_PORT=3306"
-      - "DB_HOST=mysql"
-      - "DB_NAME=go-mysql-crud"
-      - "DB_PASS=12345"
-  
+      - DB_USER=root
+      - DB_PASS=12345
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=go-mysql-crud
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
   mysql:
     image: mysql:5.7
+    container_name: mysql
     ports:
-      - 3306:3306
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=12345
+      - MYSQL_DATABASE=go-mysql-crud
     volumes:
-      - /mysql:/var/lib/mysql
-    
+      - mysql-data:/var/lib/mysql
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - app-network
+
+volumes:
+  mysql-data:
+
+networks:
+  app-network:
+    driver: bridge

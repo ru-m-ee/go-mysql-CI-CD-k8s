@@ -27,7 +27,12 @@ type Post struct {
 
 // Fetch all post data
 func (p *Post) Fetch(w http.ResponseWriter, r *http.Request) {
-	payload, _ := p.repo.Fetch(r.Context(), 5)
+	payload, err := p.repo.Fetch(r.Context(), 5)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Server Error")
+		fmt.Println("Fetch error:", err)
+		return
+	}
 
 	respondwithJSON(w, http.StatusOK, payload)
 }
@@ -35,12 +40,18 @@ func (p *Post) Fetch(w http.ResponseWriter, r *http.Request) {
 // Create a new post
 func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 	post := models.Post{}
-	json.NewDecoder(r.Body).Decode(&post)
+	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		fmt.Println("Create decode error:", err)
+		return
+	}
 
 	newID, err := p.repo.Create(r.Context(), &post)
 	fmt.Println(newID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Server Error")
+		fmt.Println("Create error:", err)
+		return
 	}
 
 	respondwithJSON(w, http.StatusCreated, map[string]string{"message": "Successfully Created"})
@@ -50,11 +61,17 @@ func (p *Post) Create(w http.ResponseWriter, r *http.Request) {
 func (p *Post) Update(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(chi.URLParam(r, "id"))
 	data := models.Post{ID: int64(id)}
-	json.NewDecoder(r.Body).Decode(&data)
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
+		fmt.Println("Update decode error:", err)
+		return
+	}
 	payload, err := p.repo.Update(r.Context(), &data)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Server Error")
+		fmt.Println("Update error:", err)
+		return
 	}
 
 	respondwithJSON(w, http.StatusOK, payload)
@@ -67,6 +84,8 @@ func (p *Post) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		respondWithError(w, http.StatusNoContent, "Content not found")
+		fmt.Println("GetByID error:", err)
+		return
 	}
 
 	respondwithJSON(w, http.StatusOK, payload)
@@ -79,9 +98,11 @@ func (p *Post) Delete(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Server Error")
+		fmt.Println("Delete error:", err)
+		return
 	}
 
-	respondwithJSON(w, http.StatusMovedPermanently, map[string]string{"message": "Delete Successfully"})
+	respondwithJSON(w, http.StatusOK, map[string]string{"message": "Delete Successfully"})
 }
 
 // respondwithJSON write json response format

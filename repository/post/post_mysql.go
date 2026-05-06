@@ -68,16 +68,15 @@ func (m *mysqlPostRepo) GetByID(ctx context.Context, id int64) (*models.Post, er
 }
 
 func (m *mysqlPostRepo) Create(ctx context.Context, p *models.Post) (int64, error) {
-	query := "Insert posts SET title=?, content=?"
+	query := "INSERT INTO posts (title, content) VALUES (?, ?)"
 
 	stmt, err := m.Conn.PrepareContext(ctx, query)
 	if err != nil {
 		return -1, err
 	}
-
-	res, err := stmt.ExecContext(ctx, p.Title, p.Content)
 	defer stmt.Close()
 
+	res, err := stmt.ExecContext(ctx, p.Title, p.Content)
 	if err != nil {
 		return -1, err
 	}

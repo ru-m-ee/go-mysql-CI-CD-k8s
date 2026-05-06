@@ -1,7 +1,25 @@
-FROM alpine
+# Stage 1: Build
+FROM golang:1.22.2-alpine AS builder
 
-COPY dist/go-mysql-crud /bin/
+WORKDIR /app
 
-EXPOSE 5001
+COPY go.mod go.sum ./
+RUN go mod download
 
-ENTRYPOINT [ "/bin/go-mysql-crud" ]
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o go-mysql-crud .
+
+# Stage 2: Run
+FROM alpine:3.19
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+COPY --from=builder /app/go-mysql-crud .
+
+USER appuser
+
+EXPOSE 8005
+
+ENTRYPOINT ["/app/go-mysql-crud"]
